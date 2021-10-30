@@ -1,5 +1,5 @@
 --
--- PModule  ==>  Traditional
+-- Traditional  ==>  PModule
 --
 
 module Transform
