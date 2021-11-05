@@ -13,3 +13,8 @@ instance Ppr Name where
 instance Ppr ModuleName where
   ppr (ModuleName path) = intercalate "." $ map ppr path
 
+
+
+ioModName :: ModuleName
+ioModName = ModuleName [Name "IO"]
+

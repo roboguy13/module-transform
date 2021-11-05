@@ -31,5 +31,11 @@ instance Ppr Traditional where
 
 
 tExample :: Traditional
-tExample = Traditional (ModuleName [Name "m"]) [Import (ModuleName [Name "IO"])] [Fun (Name "f") [] (Return (Lit 1))]
+tExample =
+  Traditional
+    (ModuleName [Name "m"])
+    [Import ioModName]
+    [Fun (Name "f") []
+      (Assign (Name "_") (moduleCall ioModName (Name "println") []))
+    ]
 

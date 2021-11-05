@@ -15,6 +15,9 @@ data Expr a
 
 data FnCallName = FnCallLocal Name | FnCallModule ModuleName Name
 
+moduleCall :: ModuleName -> Name -> [Expr a] -> Expr a
+moduleCall modName fnName = Call (FnCallModule modName fnName)
+
 instance Ppr FnCallName where
   ppr (FnCallLocal n) = ppr n
   ppr (FnCallModule mod n) = ppr mod ++ "." ++ ppr n

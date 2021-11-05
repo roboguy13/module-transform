@@ -31,5 +31,11 @@ instance Ppr PModule where
       paramList = intercalate ", " $ map ppr modParams
 
 example :: PModule
-example = PModule (ModuleName [Name "m"]) [ModuleParam (Name "io") (ModuleName [Name "IO"])] [Fun (Name "f") [] (Return (Lit 1))]
+example =
+  PModule
+    (ModuleName [Name "m"])
+    [ModuleParam (Name "io") ioModName]
+    [Fun (Name "f") []
+      (Assign (Name "_") (moduleCall ioModName (Name "println") []))
+    ]
 
