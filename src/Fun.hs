@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveFunctor #-}
+
 module Fun
   where
 
@@ -8,6 +10,7 @@ import           Ppr
 import           Data.List
 
 data Fun a = Fun Name [Name] (Stmt a)
+  deriving (Functor)
 
 instance Ppr a => Ppr (Fun a) where
   ppr (Fun n params body) = "fun " ++ ppr n ++ "(" ++ paramList ++ ") {\n" ++ indent (ppr body) ++ "\n}"

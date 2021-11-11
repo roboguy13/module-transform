@@ -36,6 +36,6 @@ example =
     (ModuleName [Name "m"])
     [ModuleParam (Name "io") ioModName]
     [Fun (Name "f") []
-      (Assign (Name "_") (moduleCall ioModName (Name "println") []))
+      (Assign (Name "_") (moduleCall (Name "io") (Name "println") []))
     ]
 

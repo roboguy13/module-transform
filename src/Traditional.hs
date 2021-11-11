@@ -13,7 +13,7 @@ import           Fun
 import           Expr
 import           Stmt
 
-data Import = Import ModuleName
+newtype Import = Import { getImportModName :: ModuleName }
 
 data Traditional =
   Traditional ModuleName [Import] [Fun ModuleName]

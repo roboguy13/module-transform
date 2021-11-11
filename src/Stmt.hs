@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveFunctor #-}
+
 module Stmt
   where
 
@@ -10,6 +12,7 @@ data Stmt a
   | Seq (Stmt a) (Stmt a)
   | While (Expr a) (Stmt a)
   | Return (Expr a)
+  deriving (Functor)
 
 instance Ppr a => Ppr (Stmt a) where
   ppr (Assign n e) = ppr n ++ " = " ++ ppr e ++ ";"

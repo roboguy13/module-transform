@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveFunctor #-}
+
 module Expr
   where
 
@@ -10,15 +12,17 @@ data Expr a
   = Var Name
   | Lit Int
   | Sub (Expr a) (Expr a)
-  | Call FnCallName [Expr a]
+  | Call (FnCallName a) [Expr a]
   | ModuleMember a Name  -- | @ModuleName "M" "x"@  ===  @M.x@
+  deriving (Functor)
 
-data FnCallName = FnCallLocal Name | FnCallModule ModuleName Name
+data FnCallName a = FnCallLocal Name | FnCallModule a Name
+  deriving (Functor)
 
-moduleCall :: ModuleName -> Name -> [Expr a] -> Expr a
+moduleCall :: a -> Name -> [Expr a] -> Expr a
 moduleCall modName fnName = Call (FnCallModule modName fnName)
 
-instance Ppr FnCallName where
+instance Ppr a => Ppr (FnCallName a) where
   ppr (FnCallLocal n) = ppr n
   ppr (FnCallModule mod n) = ppr mod ++ "." ++ ppr n
 
