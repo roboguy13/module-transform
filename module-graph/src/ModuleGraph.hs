@@ -1,9 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 
-import           Language.Java.Parser
-import           Language.Java.Syntax
-import           Language.Java.Pretty
+-- import           Language.Java.Parser
+-- import           Language.Java.Syntax
+-- import           Language.Java.Pretty
 
 import           Data.List
 import           Data.List.Split
@@ -14,16 +14,23 @@ import           System.Environment
 import           System.FilePath
 import           System.Directory
 
-data ImportTree = Node [(Name, ImportTree)]
-  deriving (Show)
+import           Data.Set (Set)
+import qualified Data.Set as Set
 
-getIdent :: Ident -> String
-getIdent (Ident str) = str
+import           JavaParser
+import           Parser (runParser)
+
+import           Ppr
+
+import Debug.Trace
+
+data ImportGraph = ImportGraph { getImportGraphEdges :: Set (Name, Name) }
+  deriving (Show)
 
 moduleNameToPath :: Name -> Maybe String
 moduleNameToPath (Name idents)
-  | (Ident "*":_) <- reverse idents = Nothing  -- NOTE: Ignore '*' imports for now
-  | otherwise                       = Just . (++".java") . intercalate "/" . map getIdent $ idents
+  | ("*":_) <- reverse idents = Nothing  -- NOTE: Ignore '*' imports for now
+  | otherwise                       = Just . (++".java") . intercalate "/" $ idents
 
 removeJavaExt :: String -> String
 removeJavaExt = composeList $ replicate javaExtLen init
@@ -34,57 +41,102 @@ composeList :: [a -> a] -> a -> a
 composeList = foldr (.) id
 
 pathToName :: String -> Name
-pathToName = Name . map Ident . splitOn "/" . removeJavaExt
+pathToName = Name . splitOn "/" . removeJavaExt
 
-importDeclModuleName :: ImportDecl -> Name
-importDeclModuleName (ImportDecl _ modName _) = modName
+importDeclModuleName :: Import -> Name
+importDeclModuleName (Import _ modName) = modName
 
-getImportTree :: String -> String -> IO ImportTree
-getImportTree basePath fileName = do
-  contents <- readFile fileName
+doesFileExistWithPaths :: [String] -> String -> IO Bool
+doesFileExistWithPaths basePaths fileName =
+  fmap or $ mapM doesFileExist (map (</> fileName) ("":basePaths))
 
-  case parser compilationUnit contents of
-    Left err -> error $ "Parse error:\n" ++ show err
+readFileWithPaths :: [String] -> String -> IO (Maybe String)
+readFileWithPaths paths0 = go ("":paths0)
+  where
+    go [] fileName = pure Nothing -- error $ "Cannot find file: " ++ fileName
+    go (path:paths) fileName =
+      let fullPath = path </> fileName
+      in
+      doesFileExist fullPath >>= \case
+        True -> Just <$> readFile fullPath
+        False -> go paths fileName
 
-    Right (CompilationUnit _pkgDecl importDecls _typeDecls) ->
-      Node <$> fmap catMaybes (traverse go importDecls)
+insertEdge :: (Name, Name) -> ImportGraph -> ImportGraph
+insertEdge edge (ImportGraph graph) = ImportGraph (Set.insert edge graph)
+
+joinImportGraphs :: [ImportGraph] -> ImportGraph
+joinImportGraphs = ImportGraph . foldr Set.union mempty . map getImportGraphEdges
+
+mkImportEdge :: Name -> Import -> (Name, Name)
+mkImportEdge name1 (Import _ name2) = (name1, name2)
+
+getImportGraph :: [String] -> Name -> IO ImportGraph
+getImportGraph = getImportGraph' mempty
+
+getImportGraph' :: Set Name -> [String] -> Name -> IO ImportGraph
+getImportGraph' visited basePaths topName
+  | topName `Set.member` visited = pure $ ImportGraph mempty
+
+  | Just fileName <- moduleNameToPath topName = do
+  readFileWithPaths basePaths fileName >>= \case
+    Nothing -> pure $ ImportGraph mempty
+    Just contents -> trace ("module " ++ show topName) $
+      case runParser parseJava contents of
+        Nothing -> error $ "Parse error in " ++ fileName
+
+        Just (_, Module _pkgDecl importDecls) -> do
+          let currEdges = map (mkImportEdge topName) $ filter (not . hasWildcard) importDecls
+              importNames = Set.fromList $ map importName importDecls
+          ImportGraph rest <- fmap joinImportGraphs $ mapM (getImportGraph' (visited `Set.union` importNames) basePaths) (Set.toList (importNames `Set.difference` visited))
+          pure (ImportGraph (Set.fromList currEdges <> rest))
+          -- joinImportGraphs <$> fmap catMaybes (traverse (go topName) importDecls)
 
   where
-    go (ImportDecl _ modName _) =
-      case moduleNameToPath modName of
-        Nothing -> pure Nothing
-        Just path -> do
-          let fullPath = basePath </> path
+    go currName (Import _ modName)
+      -- | currName `elem` visited = trace ("already visited " ++ show modName) $ pure Nothing
+      | otherwise =
+          case moduleNameToPath modName of
+            Nothing -> pure Nothing
+            Just path -> do
+              -- let fullPath = basePath </> path
 
-          doesFileExist fullPath >>= \case
-            False -> pure Nothing
-            True -> Just <$> (fmap (modName, ) (getImportTree basePath (basePath </> path)))
+              doesFileExistWithPaths basePaths path >>= \case
+                False -> pure Nothing
+                True ->
+                  pure (Just (currName, modName))
+                  -- let currEdge = (currName, modName)
+                  -- in
+                  -- Just <$> (insertEdge currEdge <$> (getImportGraph' (currName : visited) modName basePaths path))
+                -- True -> Just <$> (fmap (modName, ) (getImportGraph' (modName : visited) basePaths path))
+getImportGraph' _ _ _ = pure $ ImportGraph mempty
 
 connect :: Name -> Name -> String
-connect name1 name2 = show (prettyPrint name1) <> " -> " <> show (prettyPrint name2) <> ";"
+connect name1 name2 = show (ppr name1) <> " -> " <> show (ppr name2) <> ";"
 
-genDOT :: Name -> ImportTree -> String
-genDOT topName importTree =
+genDOT :: ImportGraph -> String
+genDOT importTree =
   unlines
     [ "strict digraph {"
-    , unlines $ map ("  " ++) $ go topName importTree
+    , unlines $ map ("  " ++) $ go importTree
     , "}"
     ]
   where
-    go currName (Node subtrees) =
-      map (connect currName . fst) subtrees
-        ++ concatMap (uncurry go) subtrees
+    go (ImportGraph edges) =
+      map (uncurry connect) $ Set.toList edges
+      -- map (connect currName . fst) subtrees
+      --   ++ concatMap (uncurry go) subtrees
 
 main :: IO ()
 main = do
   getArgs >>= \case
 
-    [basePath, fileName] -> do
-      tree <- go basePath (basePath </> fileName)
-      putStrLn $ genDOT (pathToName fileName) tree
+    (fileName:basePaths@(_:_)) -> do
+      tree <- go basePaths (pathToName fileName)
+      putStrLn $ genDOT tree
+      -- print tree
 
-    args -> error $ "Expected 2 arguments. Got " ++ show (length args)
+    args -> error $ "Expected at least 2 arguments. Got " ++ show (length args)
 
   where
-    go = getImportTree
+    go = getImportGraph
 
