@@ -17,6 +17,8 @@ import           System.Directory
 import           Data.Set (Set)
 import qualified Data.Set as Set
 
+import           Control.Monad.State
+
 import           JavaParser
 import           Parser (runParser)
 
@@ -71,25 +73,32 @@ mkImportEdge :: Name -> Import -> (Name, Name)
 mkImportEdge name1 (Import _ name2) = (name1, name2)
 
 getImportGraph :: [String] -> Name -> IO ImportGraph
-getImportGraph = getImportGraph' mempty
+getImportGraph basePaths = flip evalStateT mempty . getImportGraph' basePaths
 
-getImportGraph' :: Set Name -> [String] -> Name -> IO ImportGraph
-getImportGraph' visited basePaths topName
-  | topName `Set.member` visited = pure $ ImportGraph mempty
-
+getImportGraph' :: [String] -> Name -> StateT (Set Name) IO ImportGraph
+getImportGraph' basePaths topName
   | Just fileName <- moduleNameToPath topName = do
-  readFileWithPaths basePaths fileName >>= \case
-    Nothing -> pure $ ImportGraph mempty
-    Just contents -> trace ("module " ++ show topName) $
-      case runParser parseJava contents of
-        Nothing -> error $ "Parse error in " ++ fileName
+  visited <- get
+  if topName `Set.member` visited
+    then pure $ ImportGraph mempty
+    else
+      lift (readFileWithPaths basePaths fileName) >>= \case
+        Nothing -> pure $ ImportGraph mempty
+        Just contents -> trace ("module " ++ show topName) $
+          case runParser parseJava contents of
+            Nothing -> error $ "Parse error in " ++ fileName
 
-        Just (_, Module _pkgDecl importDecls) -> do
-          let currEdges = map (mkImportEdge topName) $ filter (not . hasWildcard) importDecls
-              importNames = Set.fromList $ map importName importDecls
-          ImportGraph rest <- fmap joinImportGraphs $ mapM (getImportGraph' (visited `Set.union` importNames) basePaths) (Set.toList (importNames `Set.difference` visited))
-          pure (ImportGraph (Set.fromList currEdges <> rest))
-          -- joinImportGraphs <$> fmap catMaybes (traverse (go topName) importDecls)
+            Just (_, Module _pkgDecl importDecls) -> do
+              modify (Set.insert topName)
+              -- insert topName
+              let currEdges = map (mkImportEdge topName) $ filter (not . hasWildcard) importDecls
+                  importNames = Set.fromList $ map importName importDecls
+
+              -- ImportGraph rest <- fmap joinImportGraphs $ mapM (\mod -> getImportGraph' (visited `Set.union` (Set.delete mod importNames)) basePaths mod) (Set.toList (importNames `Set.difference` visited))
+              ImportGraph rest <- fmap joinImportGraphs $ mapM (getImportGraph' basePaths) $ Set.toList importNames
+
+              pure (ImportGraph (Set.fromList currEdges <> rest))
+              -- joinImportGraphs <$> fmap catMaybes (traverse (go topName) importDecls)
 
   where
     go currName (Import _ modName)
@@ -108,7 +117,6 @@ getImportGraph' visited basePaths topName
                   -- in
                   -- Just <$> (insertEdge currEdge <$> (getImportGraph' (currName : visited) modName basePaths path))
                 -- True -> Just <$> (fmap (modName, ) (getImportGraph' (modName : visited) basePaths path))
-getImportGraph' _ _ _ = pure $ ImportGraph mempty
 
 connect :: Name -> Name -> String
 connect name1 name2 = show (ppr name1) <> " -> " <> show (ppr name2) <> ";"
