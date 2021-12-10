@@ -1,3 +1,9 @@
+# Requirements
+
+- GHC
+- Cabal
+- GraphViz
+
 # Building
 
     $ cabal install --only-dependencies
