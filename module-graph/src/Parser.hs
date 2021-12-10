@@ -3,6 +3,8 @@ module Parser where
 import           Control.Applicative
 import           Control.Monad
 
+import           Control.Arrow (first, second)
+
 newtype Parser a = MkParser { runParser :: String -> Maybe (String, a) }
 
 parse :: Parser a -> String -> (String, a)
@@ -44,6 +46,16 @@ parseChar c = parseWhen (== c)
 
 parseString :: String -> Parser String
 parseString str = mapM parseChar str
+
+parseNotString :: String -> Parser String
+parseNotString str = MkParser go
+  where
+    lenStr = length str
+
+    go [] = Nothing
+    go str'@(c:cs)
+      | take lenStr str' == str = Just (str', [])
+      | otherwise = second (c:) <$> go cs
 
 parseAs :: String -> a -> Parser a
 parseAs str x = parseString str *> pure x

@@ -32,7 +32,7 @@ data ImportGraph = ImportGraph { getImportGraphEdges :: Set (Name, Name) }
 moduleNameToPath :: Name -> Maybe String
 moduleNameToPath (Name idents)
   | ("*":_) <- reverse idents = Nothing  -- NOTE: Ignore '*' imports for now
-  | otherwise                       = Just . (++".java") . intercalate "/" $ idents
+  | otherwise                 = Just . (++".java") . intercalate "/" $ idents
 
 removeJavaExt :: String -> String
 removeJavaExt = composeList $ replicate javaExtLen init
@@ -44,6 +44,9 @@ composeList = foldr (.) id
 
 pathToName :: String -> Name
 pathToName = Name . splitOn "/" . removeJavaExt
+
+readModName :: String -> Name
+readModName = Name . splitOn "."
 
 importDeclModuleName :: Import -> Name
 importDeclModuleName (Import _ modName) = modName
@@ -84,11 +87,12 @@ getImportGraph' basePaths topName
     else
       lift (readFileWithPaths basePaths fileName) >>= \case
         Nothing -> pure $ ImportGraph mempty
-        Just contents -> trace ("module " ++ show topName) $
+        Just contents -> -- trace ("module " ++ show topName) $
           case runParser parseJava contents of
             Nothing -> error $ "Parse error in " ++ fileName
 
-            Just (_, Module _pkgDecl importDecls) -> do
+            Just (str0, Module _pkgDecl importDecls) -> do
+              -- traceM $ "importDecls = " ++ show importDecls
               modify (Set.insert topName)
               -- insert topName
               let currEdges = map (mkImportEdge topName) $ filter (not . hasWildcard) importDecls
@@ -105,7 +109,7 @@ getImportGraph' basePaths topName
       -- | currName `elem` visited = trace ("already visited " ++ show modName) $ pure Nothing
       | otherwise =
           case moduleNameToPath modName of
-            Nothing -> pure Nothing
+            Nothing -> trace ("Not found: " ++ ppr modName) $ pure Nothing
             Just path -> do
               -- let fullPath = basePath </> path
 
@@ -139,8 +143,8 @@ main :: IO ()
 main = do
   getArgs >>= \case
 
-    (fileName:basePaths@(_:_)) -> do
-      tree <- go basePaths (pathToName fileName)
+    (initialModule:basePaths@(_:_)) -> do
+      tree <- go basePaths (readModName initialModule)
       putStrLn $ genDOT tree
       -- print tree
 
