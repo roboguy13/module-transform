@@ -11,7 +11,7 @@ named `editor-example.png`:
     $ cabal -v0 run module-graph Main.java ../java-examples/editor | sfdp -x -Goverlap=scale -Tpng > editor-example.png
 
 (Note that the `-v0` flag prevents `cabal run` from printing unnecessary build
-status output.)
+status output to stdout.)
 
 # General command line argument format for `module-graph`
 
