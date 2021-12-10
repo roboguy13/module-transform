@@ -5,7 +5,7 @@
 
 # Running on example
 
-The following will generate a GraphViz graph and then render this to a file
+The following will generate a DOT graph and then render this to a file
 named `editor-example.png`:
 
     $ cabal -v0 run module-graph Main.java ../java-examples/editor | sfdp -x -Goverlap=scale -Tpng > editor-example.png
@@ -19,4 +19,7 @@ status output.)
 
 where `<path 1>` through `<path N>` are the names of directories for the
 relevant Java module search paths.
+
+This will write a module graph in the DOT graph language, which can then be
+rendered using GraphViz tools such as `sfdp`.
 
