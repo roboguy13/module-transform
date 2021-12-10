@@ -11,3 +11,6 @@
 Session.vim
 *.class
 *.png
+*.jpg
+dist-newstyle
+dist
