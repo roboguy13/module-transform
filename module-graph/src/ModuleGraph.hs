@@ -117,6 +117,7 @@ getImportGraph' basePaths topName
                   -- in
                   -- Just <$> (insertEdge currEdge <$> (getImportGraph' (currName : visited) modName basePaths path))
                 -- True -> Just <$> (fmap (modName, ) (getImportGraph' (modName : visited) basePaths path))
+getImportGraph' _ _ = return $ ImportGraph mempty
 
 connect :: Name -> Name -> String
 connect name1 name2 = show (ppr name1) <> " -> " <> show (ppr name2) <> ";"
