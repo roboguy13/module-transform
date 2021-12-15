@@ -1,0 +1,38 @@
+#. -b true -x true
+
+{ true ; x :-> a ** y :-> ims ** ModName(a) ** ImportList(ims, mns) }
+  void mkModule(loc x, loc y)
+{ true ; x :-> a ** y :-> b ** ModName(a) ** ModuleList(b, mns) }
+
+
+{ x :-> a ** y :-> b ** ImportList(a, ims) ** ImportList(b, ims) }
+void mkName(loc x, loc y)
+{ x :-> b ** y :-> a ** ImportList(a, ims) ** ImportList(b, ims) }
+
+{ x :-> a ** ModuleList(a, names) }
+  void toModuleGraph(loc x)
+{ x :-> b ** ModuleGraph(b, names) }
+
+{ p :-> a ** q :-> b ** y :-> rest ** TModule(a, namesA) ** TModule(b, namesB) ** ModuleGraph(rest, namesRest) }
+  void modInsert(loc p, loc q, loc y)
+{ names =i namesA ++ namesB ++ namesRest ; y :-> a ** (y+1) :-> b ** (y+2) :-> rest }
+
+{ x :-> a ** lseg(a, items) ** y :-> null }
+  void copyList(loc x, loc y)
+{ x :-> a ** y :-> b ** lseg(a, items) ** lseg(b, items) }
+
+{ p :-> a ** q :-> b ** TModule(a, namesFromA, namesToA) ** TModule(b, namesFromB, namesToB) ** ret :-> null }
+  void modGraphSingle(loc p, loc q, loc ret)
+{ namesFrom =i namesFromA ++ namesFromB /\ namesTo =i namesToA ++ namesToB ; p :-> a ** q :-> b ** TModule(a, namesFromA, namesToA) ** TModule(b, namesFromB, namesToB)** ret :-> c ** lseg(c, namesFrom) }
+
+###
+
+{ lseg(x1, s1) ** lseg(x2, s2) ** ret :-> x2 }
+  void lseg_append (loc x1, loc ret)
+{ s =i s1 ++ s2 ; lseg(y, s) ** ret :-> y }
+
+{ ModuleGraph(fst, namesFrom1, namesTo1) ** ModuleGraph(snd, namesFrom2, namesTo2) ** ret :-> snd }
+  void adjListAppend(loc fst, loc ret)
+{ namesFrom =i namesFrom1 ++ namesFrom2 /\ namesTo =i namesTo1 ++ namesTo2 ; ModuleGraph(y, namesFrom, namesTo) ** ret :-> y ** ModuleGraph(fst, namesFrom1, namesTo1) }
+
+###

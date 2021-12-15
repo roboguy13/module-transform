@@ -1,0 +1,30 @@
+predicate ImportList(loc x, set mns) {
+| x == null => { mns =i {} ; emp }
+| not (x == null) => { mns =i {mn} ++ mns1 ; [x, 2] ** x :-> mn ** x :-> rest ** ImportList(rest, mns) }
+}
+
+// "Traditional" module
+predicate TModule(loc x, set mns) {
+| true => { [x, 2] ** x :-> mn ** (x+1) :-> ims ** ImportList(ims, mns) }
+}
+
+predicate ModuleList(loc x, set names) {
+| x == null => { names =i {} ; emp }
+| not (x == null) => { names =i {a} ++ names1 ; [x, 2] ** x :-> a ** (x+1) :-> b ** TModule(a, mns) ** ModuleList(b, names1) }
+}
+
+// Adjacency list-based
+predicate ModuleGraph(loc x, set namesFrom, set namesTo) {
+| x == null => { names =i {} ; emp }
+| not (x == null) => { namesFrom =i namesFromA ++ namesFrom1 /\ namesTo =i namesToB ++ namesTo1 ; [x, 3] ** x :-> a ** (x+1) :-> b ** (x+2) :-> c ** TModule(a, namesFromA) ** TModule(b, namesToB) ** ModuleGraph(c, namesFrom1, namesTo1) }
+}
+
+predicate lseg(loc x, set s) {
+|  x == null        => { s =i {} ; emp }
+|  not (x == null)  => { s =i {v} ++ s1 ; [x, 2] ** x :-> v ** (x + 1) :-> nxt ** lseg(nxt, s1) }
+}
+
+predicate lseg2(loc x, set s) {
+|  x == null        => { s =i {} ; emp }
+|  not (x == null)  => { s =i {v} ++ s1 ; [x, 2] ** x :-> v ** (x + 1) :-> nxt ** lseg(nxt, s1) }
+}
