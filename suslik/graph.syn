@@ -43,8 +43,12 @@ void mkName(loc x, loc y)
   void modInsert(loc p, loc q, loc y)
 { namesFrom =i namesFromA ++ namesFromRest /\ namesTo =i namesToB ++ namesToRest ; p :-> a ** q :-> b ** y :-> c ** ModuleGraph(c, namesFrom, namesTo) }
 
-{ x :-> a ** ModuleList(a, namesFrom) ** y :-> null }
+{ x :-> a ** ModuleFrom(a, namesFrom) ** y :-> null }
   void moduleFromList(loc x, loc y)
-{ x :-> a ** ModuleList(a, namesFrom) ** y :-> b ** lseg(b, namesFrom) }
+{ x :-> a ** ModuleFrom(a, namesFrom) ** y :-> b ** lseg(b, namesFrom) }
+
+{ x :-> a ** ModuleList(a, names) ** y :-> null ** z :-> null }
+  void genModuleFromList(loc x, loc y, loc z)
+{ names =i namesFrom ++ namesTo ; x :-> a ** ModuleList(a, names) ** y :-> b ** z :-> c ** ModuleFrom(b, namesFrom) ** ModuleTo(b, namesTo) }
 
 ###

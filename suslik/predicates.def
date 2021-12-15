@@ -24,6 +24,11 @@ predicate ModuleFrom(loc x, set namesFrom) {
 | not (x == null) => { namesFrom =i {modName} ++ namesFrom1 ; [x, 2] ** ModuleList(x, names) ** x :-> a ** a :-> modName ** (x+1) :-> b ** ModuleFrom(b, namesFrom1) }
 }
 
+predicate ModuleTo(loc x, set namesTo) {
+| x == null => { namesTo =i {} ; emp }
+| not (x == null) => { namesTo =i newNames ++ namesTo1 ; [x, 2] ** ModuleList(x, names) ** x :-> a ** (a+1) :-> ims ** ImportList(ims, newNames) ** (x+1) :-> b ** ModuleTo(b, namesTo1) }
+}
+
 predicate lseg(loc x, set s) {
 |  x == null        => { s =i {} ; emp }
 |  not (x == null)  => { s =i {v} ++ s1 ; [x, 2] ** x :-> v ** (x + 1) :-> nxt ** lseg(nxt, s1) }
