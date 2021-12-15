@@ -21,10 +21,11 @@ void mkName(loc x, loc y)
   void copyList(loc x, loc y)
 { x :-> a ** y :-> b ** lseg(a, items) ** lseg(b, items) }
 
-{ p :-> a ** q :-> b ** TModule(a, namesFromA, namesToA) ** TModule(b, namesFromB, namesToB) ** ret :-> null }
+{ p :-> a ** q :-> b ** TModule(a, namesFromA) ** TModule(b, namesToB) ** ret :-> null }
   void modGraphSingle(loc p, loc q, loc ret)
-{ namesFrom =i namesFromA ++ namesFromB /\ namesTo =i namesToA ++ namesToB ; p :-> a ** q :-> b ** TModule(a, namesFromA, namesToA) ** TModule(b, namesFromB, namesToB)** ret :-> c ** lseg(c, namesFrom) }
+{ p :-> a ** q :-> b ** TModule(a, namesFromA) ** TModule(b, namesToB) ** ret :-> c **  ModuleGraph(c, namesFromA, namesToB) }
 
+{ namesFrom =i namesFromA ++ namesFromRest /\ namesToB ++ namesToRest ; y :-> a ** (y+1) :-> b ** (y+2) :-> rest }
 ###
 
 { lseg(x1, s1) ** lseg(x2, s2) ** ret :-> x2 }
@@ -34,5 +35,9 @@ void mkName(loc x, loc y)
 { ModuleGraph(fst, namesFrom1, namesTo1) ** ModuleGraph(snd, namesFrom2, namesTo2) ** ret :-> snd }
   void adjListAppend(loc fst, loc ret)
 { namesFrom =i namesFrom1 ++ namesFrom2 /\ namesTo =i namesTo1 ++ namesTo2 ; ModuleGraph(y, namesFrom, namesTo) ** ret :-> y ** ModuleGraph(fst, namesFrom1, namesTo1) }
+
+{ p :-> a ** q :-> b ** y :-> rest ** TModule(a, namesFromA) ** TModule(b, namesToB) ** ModuleGraph(rest, namesFromRest, namesToRest) }
+  void modInsert(loc p, loc q, loc y)
+{ namesFrom =i namesFromA ++ namesFromRest /\ namesTo =i namesToB ++ namesToRest ; p :-> a ** q :-> b ** y :-> c ** ModuleGraph(c, namesFrom, namesTo) }
 
 ###
