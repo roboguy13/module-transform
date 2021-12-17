@@ -29,6 +29,19 @@ void mkName(loc x, loc y)
   void toModuleGraph(loc x, loc y)
 { x :-> a ** y :-> b ** ModuleGraph(b, names) }
 
+{ x :-> a ** ModuleList(a, names) ** y :-> null ** z :-> null }
+  void genModuleFromList(loc x, loc y, loc z)
+{ names =i namesFrom ++ namesTo ; x :-> a ** ModuleList(a, names) ** y :-> b ** z :-> c ** ModuleFrom(b, namesFrom) ** ModuleTo(b, namesTo) }
+
+
+{ x :-> a ** ModuleFrom(a, namesFrom) ** y :-> null }
+  void moduleFromList(loc x, loc y)
+{ x :-> a ** ModuleFrom(a, namesFrom) ** y :-> b ** lseg(b, namesFrom) }
+
+{ x :-> a ** ModuleGraph(a, namesFrom, namesTo) ** y :-> null ** z :-> null }
+  void moduleFromList(loc x, loc y, loc z)
+{ x :-> a ** ModuleGraph(a, namesFrom, namesTo) ** y :-> b ** lseg(b, namesFrom) ** z :-> c ** lseg(c, namesTo) }
+
 ###
 
 { lseg(x1, s1) ** lseg(x2, s2) ** ret :-> x2 }
@@ -43,12 +56,9 @@ void mkName(loc x, loc y)
   void modInsert(loc p, loc q, loc y)
 { namesFrom =i namesFromA ++ namesFromRest /\ namesTo =i namesToB ++ namesToRest ; p :-> a ** q :-> b ** y :-> c ** ModuleGraph(c, namesFrom, namesTo) }
 
-{ x :-> a ** ModuleFrom(a, namesFrom) ** y :-> null }
-  void moduleFromList(loc x, loc y)
-{ x :-> a ** ModuleFrom(a, namesFrom) ** y :-> b ** lseg(b, namesFrom) }
+{ x :-> a ** ModuleList(a, names) ** y :-> null }
+  void moduleList(loc x, loc y)
+{ x :-> a ** ModuleList(a, names) ** y :-> b ** lseg(b, names) }
 
-{ x :-> a ** ModuleList(a, names) ** y :-> null ** z :-> null }
-  void genModuleFromList(loc x, loc y, loc z)
-{ names =i namesFrom ++ namesTo ; x :-> a ** ModuleList(a, names) ** y :-> b ** z :-> c ** ModuleFrom(b, namesFrom) ** ModuleTo(b, namesTo) }
 
 ###
